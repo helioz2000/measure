@@ -1,5 +1,5 @@
 /**
- * @file homescr1.cpp
+ * @file measure.cpp
  *
  */
 
@@ -32,7 +32,7 @@
 
 //#define MQTT_CONNECT_TIMEOUT 5      // seconds
 
-#define CPU_TEMP_TOPIC "binder/home/screen1/cpu/temp"
+#define CPU_TEMP_TOPIC "ham/vk2ray/site/raylog/cpu/temp"
 //#define ENV_TEMP_TOPIC "binder/home/screen1/env/temp"
 
 bool exitSignal = false;
@@ -315,7 +315,7 @@ int main (int argc, char *argv[])
     }
 
     syslog(LOG_INFO,"[%s] PID: %d PPID: %d", argv[0], getpid(), getppid());
-    
+
     signal (SIGINT, sigHandler);
     //signal (SIGHUP, sigHandler);
 
@@ -337,4 +337,3 @@ int main (int argc, char *argv[])
     exit_loop();
     syslog(LOG_INFO, "exiting");
 }
-
