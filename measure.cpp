@@ -25,7 +25,7 @@
 
 
 //#include "hardware.h"
-//#include "datatag.h"
+#include "datatag.h"
 //#include "mcp9808/mcp9808.h"
 
 #define VAR_PROCESS_INTERVAL 5      // seconds
