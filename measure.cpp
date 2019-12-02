@@ -53,7 +53,7 @@ void subscribe_tags(void);
 void mqtt_connection_status(bool status);
 void mqtt_topic_update(const char *topic, const char *value);
 
-//Hardware hw;
+Hardware hw;
 TagStore ts;
 MQTT mqtt;
 //Mcp9808 envTempSensor;    // Environment temperature sensor at rear of screen

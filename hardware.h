@@ -14,8 +14,10 @@
 
 class Hardware {
 public:
-    // Constructor
+    // forbidden constructor, will fail
     Hardware ();
+    // Constructor
+    Hardware (bool withScreen);
 
     // Destructor
     ~Hardware ();
@@ -77,6 +79,7 @@ public:
     int get_ip_address(char *buffer, int maxlen);
 
 private:
+    bool _has_screen;            // true if screen is in use
     int touch_fd;               // file descriptor for touch input
     time_t screen_timout;       // screen saver timeout
     bool screen_saver_active;   //

@@ -34,19 +34,29 @@ int touch_fd = -1;
 time_t screen_timout;
 bool screen_saver_active = false;
 
-Hardware::Hardware()
+Hardware::Hardware() {
+    printf("%s\n", __func__);
+    throw runtime_error("Class Tag - forbidden constructor");
+}
+
+Hardware::Hardware(bool withScreen)
 {
     //fprintf(stderr, "%s: Constructor called\n", __func__);
-    touch_fd = -1;
-    screen_saver_active = false;
-    // preset screen saver timeout
-    time_t now = time(NULL);
-    screen_timout = now + SCREEN_SAVER_TIME;
+    if (withScreen) {
+        _has_screen = true;
+        touch_fd = -1;
+        screen_saver_active = false;
+        // preset screen saver timeout
+        time_t now = time(NULL);
+        screen_timout = now + SCREEN_SAVER_TIME;
 
-    // open touch screen input for screen saver
-    touch_fd = open(TOUCH_INPUT_PATH, O_RDONLY | O_NONBLOCK);
-    if (touch_fd == -1) {
-        printf("Failed to open Touch Input\n");
+        // open touch screen input for screen saver
+        touch_fd = open(TOUCH_INPUT_PATH, O_RDONLY | O_NONBLOCK);
+        if (touch_fd == -1) {
+            printf("Failed to open Touch Input\n");
+        }
+    } else {
+        _has_screen = false;
     }
 }
 
@@ -57,6 +67,7 @@ Hardware::~Hardware() {
 void Hardware::process_screen_saver(int brightness)
 {
     char buffer[256];
+    if (!_has_screen) return;
     if (touch_fd <= 0) return;
     int length = read(touch_fd, buffer, sizeof(buffer));
     time_t now = time(NULL);
@@ -172,6 +183,8 @@ bool Hardware::set_brightness(int new_brightness)
     char buffer[80];
     int brightness_fd;
 
+    if (!_has_screen) return false;
+
     brightness_fd = open(BRIGTHNESS_CONTROL, O_RDWR);
     if (brightness_fd != -1) {
         sprintf(buffer,"%d", new_brightness);
@@ -194,6 +207,7 @@ int Hardware::get_brightness(void)
     int fd;
     int length;
     int value = -1;
+    if (!_has_screen) return -1;
     fd = open(BRIGTHNESS_CONTROL, O_RDONLY | O_NONBLOCK);
     if (fd != -1) {
         length = read(fd, buffer, sizeof(buffer));
