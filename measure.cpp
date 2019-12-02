@@ -22,10 +22,9 @@
 #include <mosquitto.h>
 
 #include "mqtt.h"
-
-
-//#include "hardware.h"
 #include "datatag.h"
+#include "hardware.h"
+
 //#include "mcp9808/mcp9808.h"
 
 #define VAR_PROCESS_INTERVAL 5      // seconds
@@ -105,7 +104,7 @@ void var_process(void) {
               mqtt.publish(CPU_TEMP_TOPIC, "%.1f", tag->floatValue() );
             }
         }
-/*
+        /*
         // update environment temperature
         tag = ts.getTag((const char*) ENV_TEMP_TOPIC);
         if (tag != NULL) {
@@ -118,8 +117,8 @@ void var_process(void) {
                 syslog(LOG_ERR, "Failed to read Mcp9808 temp sensor");
             }
         }
+        */
     }
-*/
     // reconnect mqtt if required
     /*if (!mqtt.isConnected() && !mqtt_connection_in_progress) {
         mqtt_connect();
@@ -129,13 +128,6 @@ void var_process(void) {
 void init_values(void)
 {
     char info1[80], info2[80], info3[80], info4[80];
-    // Initialise brightness
-    int value = hw.get_brightness();
-    if (value < 10) {
-        value = 10; // ensure min value
-        hw.set_brightness(value);
-    }
-    screen_set_brightness(value);   // write to screen brightness
 
     // get hardware info
     hw.get_model_name(info1, sizeof(info1));
