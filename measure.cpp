@@ -28,7 +28,7 @@
 //#include "mcp9808/mcp9808.h"
 
 #define VAR_PROCESS_INTERVAL 5      // seconds
-
+#define SCREEN_UPDATE 5		// to be replaced, we have no screen!
 //#define MQTT_CONNECT_TIMEOUT 5      // seconds
 
 #define CPU_TEMP_TOPIC "ham/vk2ray/site/raylog/cpu/temp"

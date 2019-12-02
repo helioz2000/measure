@@ -96,7 +96,7 @@ static void on_subscribe(struct mosquitto *mosq, void *obj, int mid, int qos_cou
      _construct(clientID);
 }
 
- void MQTT::_construct (const char* clientID);
+ void MQTT::_construct (const char* clientID) {
      _connected = false;
      _console_log_enable = false;
      _qos = 0;

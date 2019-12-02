@@ -20,6 +20,9 @@
 #include "hardware.h"
 #include "datatag.h"
 
+#include <stdexcept>
+#include <iostream>
+
 /*********************
  *      DEFINES
  *********************/
@@ -29,6 +32,8 @@
 #define MODEL_NAME_PATH "/proc/device-tree/model"
 #define TOUCH_INPUT_PATH "/dev/input/event0"
 #define SCREEN_SAVER_TIME 8      // in s
+
+using namespace std;
 
 int touch_fd = -1;
 time_t screen_timout;
