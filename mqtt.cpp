@@ -28,8 +28,8 @@
  *      DEFINES
  *********************/
 
-#define CLIENT_ID "homescr1"        // our ID for broker connection
-#define MQTT_BROKER_DEFAULT "192.168.0.124"
+#define DEFAULT_CLIENT_ID "mqtt_client"        // our ID for broker connection
+#define MQTT_BROKER_DEFAULT "127.0.0.1"
 #define MQTT_BROKER_DEFAULT_PORT 1883
 #define MQTT_BROKER_DEFAULT_KEEPALIVE 60
 #define MQTT_RETAIN_DEFAULT false
@@ -89,6 +89,14 @@ static void on_subscribe(struct mosquitto *mosq, void *obj, int mid, int qos_cou
  //
 
  MQTT::MQTT() {
+     _construct(DEFAULT_CLIENT_ID);
+ }
+
+ MQTT::MQTT (const char* clientID) {
+     _construct(clientID);
+}
+
+ void MQTT::_construct (const char* clientID);
      _connected = false;
      _console_log_enable = false;
      _qos = 0;
@@ -107,7 +115,7 @@ static void on_subscribe(struct mosquitto *mosq, void *obj, int mid, int qos_cou
      syslog(LOG_INFO, "mosquitto library V%d.%d.%d (%d)", major, minor, revision, result);
 
      // create new mqtt
-     _mosq = mosquitto_new(CLIENT_ID, false, this);  // "this" provides a link from calllback to class instance
+     _mosq = mosquitto_new(clientID, false, this);  // "this" provides a link from calllback to class instance
      if (_mosq == NULL) {
          syslog(LOG_ERR,"Class MQTT - mosquitto_new returned NULL");
          throw runtime_error("Class MQTT - mosquitto_new returned NULL");

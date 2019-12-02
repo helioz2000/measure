@@ -22,6 +22,12 @@ public:
     // Constructor
     MQTT ();
 
+    /**
+     * Constructor
+     * @param clientID: client ID for broker connections
+     */
+    MQTT (const char* clientID);
+
     // Destructor
     ~MQTT();
 
@@ -142,6 +148,7 @@ public:
 private:
     void (*connectionStatusCallback) (bool);     // callback for connection status change
     void (*topicUpdateCallback) (const char *topic, const char *value);     // callback for topic update
+    void _construct (const char* clientID);
 
     struct mosquitto *_mosq;
     bool _connected;
