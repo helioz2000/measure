@@ -38,7 +38,7 @@ bool exitSignal = false;
 bool debugEnabled = false;
 bool runningAsDaemon = false;
 time_t var_process_time = time(NULL) + VAR_PROCESS_INTERVAL;
-//time_t mqtt_connection_timeout = 0;
+time_t mqtt_connection_timeout = 0;
 time_t mqtt_connect_time = 0;   // time the connection was initiated
 bool mqtt_connection_in_progress = false;
 std::string processName;
