@@ -28,7 +28,7 @@
 //#include "mcp9808/mcp9808.h"
 
 #define VAR_PROCESS_INTERVAL 5      // seconds
-#define SCREEN_UPDATE 5		// to be replaced, we have no screen!
+#define PROCESS_LOOP_INTERVAL 100	// milli seconds
 //#define MQTT_CONNECT_TIMEOUT 5      // seconds
 
 #define CPU_TEMP_TOPIC "ham/vk2ray/site/raylog/cpu/temp"
@@ -42,8 +42,6 @@ time_t var_process_time = time(NULL) + VAR_PROCESS_INTERVAL;
 time_t mqtt_connect_time = 0;   // time the connection was initiated
 bool mqtt_connection_in_progress = false;
 std::string processName;
-
-
 char *info_label_text;
 //extern void cpuTempUpdate(int x, Tag* t);
 //extern void roomTempUpdate(int x, Tag* t);
@@ -84,7 +82,7 @@ void sigHandler(int signum)
     exitSignal = true;
 }
 
-/*
+/**
  * Process local variables
  * Local variables are process at a fixed time interval
  * The processing involves reading value from hardware and
@@ -203,7 +201,7 @@ void subscribe_tags(void) {
     }
 }
 
-/*
+/**
  * callback function for MQTT
  * MQTT notifies a change in connection status by calling this function
  * This function is registered with MQTT during initialisation
@@ -232,7 +230,7 @@ void mqtt_connection_status(bool status) {
     //printf("%s - done\n", __func__);
 }
 
-/*
+/**
  * callback function for MQTT
  * MQTT notifies when a subscribed topic has received an update
  *
@@ -249,7 +247,7 @@ void mqtt_topic_update(const char *topic, const char *value) {
     tp->setValue(value);
 }
 
-/*
+/**
  * called on program exit
  */
 void exit_loop(void)
@@ -274,7 +272,7 @@ void main_loop()
         if (cpu_time_used < min_time) {
             min_time = cpu_time_used;
         }
-        usleep(SCREEN_UPDATE * 1000);
+        usleep(PROCESS_LOOP_INTERVAL * 1000);
     }
     printf("CPU time %.3fms - %.3fms\n", min_time*1000, max_time*1000);
 }
