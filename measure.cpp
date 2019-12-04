@@ -180,7 +180,9 @@ void mqtt_connect(void) {
  * Initialise the MQTT broker and register callbacks
  */
 void init_mqtt(void) {
-    //mqtt.setConsoleLog(true);
+    if (debugEnabled) {
+        mqtt.setConsoleLog(true);
+    }
     mqtt.registerConnectionCallback(mqtt_connection_status);
     mqtt.registerTopicUpdateCallback(mqtt_topic_update);
     mqtt_connect();
