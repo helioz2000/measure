@@ -256,9 +256,12 @@ void MQTT::publish_callback(struct mosquitto *m, int mid) {
 }
 
 void MQTT::connect_callback(struct mosquitto *m, int result) {
-     printf("%s: %s\n", __func__ , mosquitto_connack_string(result) );
+     //printf("%s: %s\n", __func__ , mosquitto_connack_string(result) );
      if (result == MOSQ_ERR_SUCCESS) {
          _connected = true;
+         if (_console_log_enable) {
+             printf("%s: connection success\n", __func__);
+         }
      } else {
          syslog(LOG_ERR, "mosquitto_connack_string(result)");
          fprintf(stderr, "%s: %s\n", __func__ , mosquitto_connack_string(result) );
