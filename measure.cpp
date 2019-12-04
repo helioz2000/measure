@@ -176,17 +176,17 @@ void mqtt_connect(void) {
     mqtt_connect_time = time(NULL);
 }
 
-/*
+/**
  * Initialise the MQTT broker and register callbacks
  */
 void init_mqtt(void) {
-    mqtt.setConsoleLog(true);
+    //mqtt.setConsoleLog(true);
     mqtt.registerConnectionCallback(mqtt_connection_status);
     mqtt.registerTopicUpdateCallback(mqtt_topic_update);
     mqtt_connect();
 }
 
-/*
+/**
  * Subscribe tags to MQTT broker
  * Iterate over tag store and process every "subscribe" tag
  */
