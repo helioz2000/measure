@@ -44,9 +44,9 @@ bool mqtt_connection_in_progress = false;
 std::string processName;
 
 
-extern char *info_label_text;
-extern void cpuTempUpdate(int x, Tag* t);
-extern void roomTempUpdate(int x, Tag* t);
+char *info_label_text;
+//extern void cpuTempUpdate(int x, Tag* t);
+//extern void roomTempUpdate(int x, Tag* t);
 
 // Proto types
 void subscribe_tags(void);
@@ -148,7 +148,7 @@ void init_tags(void)
     // CPU temp
     Tag* tp = ts.addTag((char*) CPU_TEMP_TOPIC);
     tp->setPublish();
-    tp->registerCallback(&cpuTempUpdate, 15);   // update screen
+    //tp->registerCallback(&cpuTempUpdate, 15);   // update screen
 
 /*
     // Environment temperature is stored in index 0
