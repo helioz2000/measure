@@ -41,7 +41,7 @@ bool screen_saver_active = false;
 
 Hardware::Hardware() {
     printf("%s\n", __func__);
-    throw runtime_error("Class Tag - forbidden constructor");
+    throw runtime_error("Class Hardware - forbidden constructor");
 }
 
 Hardware::Hardware(bool withScreen)
