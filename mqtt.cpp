@@ -111,7 +111,7 @@ static void on_subscribe(struct mosquitto *mosq, void *obj, int mid, int qos_cou
      mosquitto_lib_init();
      int major, minor, revision, result;
      result = mosquitto_lib_version(&major, &minor, &revision);
-     printf("%s - mosquitto library V%d.%d.%d (%d)\n", __func__, major, minor, revision, result);
+     printf("%s - mosquitto library V%d.%d.%d (%d)\n", __PRETTY_FUNCTION__, major, minor, revision, result);
      syslog(LOG_INFO, "mosquitto library V%d.%d.%d (%d)", major, minor, revision, result);
 
      // create new mqtt
