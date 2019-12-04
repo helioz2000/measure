@@ -169,7 +169,7 @@ void init_tags(void)
 }
 
 void mqtt_connect(void) {
-    printf("%s - attempting to connect to mqtt broker.\n", __func__);
+    //printf("%s - attempting to connect to mqtt broker.\n", __func__);
     mqtt.connect();
     mqtt_connection_timeout = time(NULL) + MQTT_CONNECT_TIMEOUT;
     mqtt_connection_in_progress = true;
@@ -208,7 +208,7 @@ void subscribe_tags(void) {
  * This function is registered with MQTT during initialisation
  */
 void mqtt_connection_status(bool status) {
-    printf("%s - %d\n", __func__, status);
+    //printf("%s - %d\n", __func__, status);
     // subscribe tags when connection is online
     if (status) {
         syslog(LOG_INFO, "Connected to MQTT broker [%s]", mqtt.server());
@@ -228,7 +228,7 @@ void mqtt_connection_status(bool status) {
             fprintf(stderr, "%s: Disconnected from MQTT broker [%s]\n", __func__, mqtt.server());
         }
     }
-    printf("%s - done\n", __func__);
+    //printf("%s - done\n", __func__);
 }
 
 /**
