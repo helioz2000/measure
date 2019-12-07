@@ -8,7 +8,8 @@
 /*********************
  *      INCLUDES
  *********************/
-#include <sys/utsname.h>
+
+#include <errno.h>
 #include <fcntl.h>
 #include <signal.h>
 #include <stdarg.h>
@@ -17,9 +18,10 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <syslog.h>
+#include <sys/utsname.h>
 #include <time.h>
 #include <unistd.h>
-#include <syslog.h>
 
 #include <libconfig.h++>
 #include <mosquitto.h>
@@ -30,6 +32,9 @@
 
 //#include "mcp9808/mcp9808.h"
 
+#define CFG_FILENAME_EXT ".cfg"
+#define CFG_DEFAULT_FILEPATH "/etc/"
+
 #define VAR_PROCESS_INTERVAL 5      // seconds
 #define PROCESS_LOOP_INTERVAL 100	// milli seconds
 #define MQTT_CONNECT_TIMEOUT 5      // seconds
@@ -37,6 +42,10 @@
 #define CPU_TEMP_TOPIC "ham/vk2ray/site/raylog/cpu/temp"
 //#define ENV_TEMP_TOPIC "binder/home/screen1/env/temp"
 
+
+const char *build_date_str = __DATE__ " " __TIME__;
+static string cfgFileName;
+static string execName;
 bool exitSignal = false;
 bool debugEnabled = false;
 bool runningAsDaemon = false;
@@ -54,10 +63,10 @@ void subscribe_tags(void);
 void mqtt_connection_status(bool status);
 void mqtt_topic_update(const char *topic, const char *value);
 
-Hardware hw(false);
+Hardware hw(false); // no screen
 TagStore ts;
 MQTT mqtt;
-Config cfg;
+Config cfg;         // config file name
 //Mcp9808 envTempSensor;    // Environment temperature sensor at rear of screen
 
 /*
@@ -93,7 +102,7 @@ void sigHandler(int signum)
 bool readConfig (void)
 {   int ival;
     // Read the file. If there is an error, report it and exit.
-    
+
     try
     {
         cfg.readFile(cfgFileName.c_str());
@@ -109,16 +118,18 @@ bool readConfig (void)
                   << " - " << pex.getError() << std::endl;
         return false;
     }
-    
+
     //syslog (LOG_INFO, "CFG file read OK");
     //std::cerr << cfgFileName << " read OK" <<endl;
-    
+
+/*
+
     if (! cfg.lookupValue("mainloopdelay", ival)) {
         setMainLoopDelay( MAIN_LOOP_DELAY_DEFAULT );
     } else {
         setMainLoopDelay( ival );
     }
-/*
+
     try {
         useGPS = cfg.lookup("useGPS");
     } catch (const SettingNotFoundException &excp) {
@@ -127,7 +138,7 @@ bool readConfig (void)
         std::cerr << "Error in config file <" << excp.getPath() << "> is not a bool" << std::endl;
         return false;
     }
-    
+
     if (useGPS) {
         try {
             gpsPort = string((const char*)cfg.lookup("gpsPort"));
@@ -147,7 +158,7 @@ bool readConfig (void)
 
 /**
  * Process local variables
- * Local variables are process at a fixed time interval
+ * Local variables are processed at a fixed time interval
  * The processing involves reading value from hardware and
  * publishing the value to MQTT broker
  */
@@ -345,32 +356,72 @@ void main_loop()
     printf("CPU time %.3fms - %.3fms\n", min_time*1000, max_time*1000);
 }
 
-void argument(const char *arg) {
-    if (arg[0] == '-') {
-        switch (arg[1]) {
-            case 'd':
-                debugEnabled = true;
-                printf("Debug enabled\n");
-                break;
-            default:
-                fprintf(stderr, "unknown argument: %s\n", arg);
-                syslog(LOG_NOTICE, "unknown argument: %s", arg);
-        }
-    }
+/** Display program usage instructions.
+ * @param
+ * @return
+ */
+static void showUsage(void) {
+    cout << "usage:" << endl;
+    cout << execName << "-cCfgFileName -d -h" << endl;
+    cout << "c = name of config file (.cfg is added automatically)" << endl;
+    cout << "d = enable debug mode" << endl;
+    cout << "h = show help" << endl;
+}
+
+/** Parse command line arguments.
+ * @param argc argument count
+ * @param argv array of arguments
+ * @return false to indicate program needs to abort
+ */
+bool parseArguments(const int argc, const char *argv[]) {
+  char buffer[64];
+    int i, buflen;
+    int retval = true;
+  execName = std::string(basename(argv[0]));
+  cfgFileName = execName;
+
+  if (argc > 1) {
+      for (i = 1; i < argc; i++) {
+          strcpy(buffer, argv[i]);
+          buflen = strlen(buffer);
+          if ((buffer[0] == '-') && (buflen >=2)) {
+              switch (buffer[1]) {
+                  case 'c':
+                      cfgFileName = std::string(&buffer[1]);
+                      break;
+                  case 'd':
+                      debugEnabled = true;
+                      printf("Debug enabled\n");
+                      break;
+                  case 'h':
+                      showUsage();
+                      retval = false;
+                      break;
+                  default:
+                      std::cerr << "uknown parameter <" << &buffer[1] << ">" << endl;
+                      syslog(LOG_NOTICE, "unknown parameter: %s", argv[i]);
+                      showUsage();
+                      retval = false;
+                      break;
+                }
+                ;
+            } // if
+        }  // for (i)
+    }  //if (argc >1)
+
+    // add config file extension
+    cfgFileName += std::string(CFG_FILENAME_EXT);
+    return retval;
 }
 
 int main (int argc, char *argv[])
 {
     int i;
 
-    if ( getppid() == 1) {
-        runningAsDaemon = true;
-    }
-
+    if ( getppid() == 1) runningAsDaemon = true;
     processName =  argv[0];
-    for (i = 1; i < argc; i++) {
-        argument( argv[i] );
-    }
+
+    if (! parseArguments(argc, argv) ) goto exit_fail;
 
     syslog(LOG_INFO,"[%s] PID: %d PPID: %d", argv[0], getpid(), getppid());
 
@@ -384,14 +435,22 @@ int main (int argc, char *argv[])
         signal (SIGTERM, sigHandler);
     }
 
-    //mqtt.setConsoleLog(true);
+    // read config file
+    if (! readConfig()) {
+        syslog(LOG_ERR, "Error reading config file <%s>", cfgFileName.c_str());
+        goto exit_fail;
+    }
+
     init_tags();
     init_mqtt();
     init_values();
     usleep(100000);
-//    screen_init();
-//    screen_create();
     main_loop();
     exit_loop();
     syslog(LOG_INFO, "exiting");
+    exit(EXIT_SUCCESS);
+
+exit_fail:
+    syslog(LOG_INFO, "exit with error");
+    exit(EXIT_FAILURE);
 }
