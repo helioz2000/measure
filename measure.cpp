@@ -188,6 +188,7 @@ void init_mqtt(void) {
     }
     mqtt.registerConnectionCallback(mqtt_connection_status);
     mqtt.registerTopicUpdateCallback(mqtt_topic_update);
+    usleep(1000000);
     mqtt_connect();
 }
 
