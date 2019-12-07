@@ -176,7 +176,7 @@ void mqtt_connect(void) {
     mqtt_connection_timeout = time(NULL) + MQTT_CONNECT_TIMEOUT;
     mqtt_connection_in_progress = true;
     mqtt_connect_time = time(NULL);
-    printf("%s - Done\n", __func__);
+    //printf("%s - Done\n", __func__);
 }
 
 /**
@@ -188,7 +188,6 @@ void init_mqtt(void) {
     }
     mqtt.registerConnectionCallback(mqtt_connection_status);
     mqtt.registerTopicUpdateCallback(mqtt_topic_update);
-    usleep(1000000);
     mqtt_connect();
 }
 
@@ -197,7 +196,7 @@ void init_mqtt(void) {
  * Iterate over tag store and process every "subscribe" tag
  */
 void subscribe_tags(void) {
-    printf("%s - Start\n", __func__);
+    //printf("%s - Start\n", __func__);
     Tag* tp = ts.getFirstTag();
     while (tp != NULL) {
         if (tp->isSubscribe()) {
@@ -206,7 +205,7 @@ void subscribe_tags(void) {
         }
         tp = ts.getNextTag();
     }
-    printf("%s - Done\n", __func__);
+    //printf("%s - Done\n", __func__);
 }
 
 /**
