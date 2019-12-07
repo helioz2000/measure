@@ -32,6 +32,9 @@
 
 //#include "mcp9808/mcp9808.h"
 
+using namespace std;
+using namespace libconfig;
+
 #define CFG_FILENAME_EXT ".cfg"
 #define CFG_DEFAULT_FILEPATH "/etc/"
 
@@ -100,7 +103,8 @@ void sigHandler(int signum)
  * @return true if success
  */
 bool readConfig (void)
-{   int ival;
+{   
+    int ival;
     // Read the file. If there is an error, report it and exit.
 
     try
@@ -122,14 +126,14 @@ bool readConfig (void)
     //syslog (LOG_INFO, "CFG file read OK");
     //std::cerr << cfgFileName << " read OK" <<endl;
 
-/*
-
     if (! cfg.lookupValue("mainloopdelay", ival)) {
-        setMainLoopDelay( MAIN_LOOP_DELAY_DEFAULT );
+        printf( "%s - mainloopdelay NOT found\n",__func__);
+	//setMainLoopDelay( MAIN_LOOP_DELAY_DEFAULT );
     } else {
-        setMainLoopDelay( ival );
+        printf( "%s - mainloopdelay found: %d\n",__func__,ival);
+        //setMainLoopDelay( ival );
     }
-
+/*
     try {
         useGPS = cfg.lookup("useGPS");
     } catch (const SettingNotFoundException &excp) {
@@ -373,7 +377,7 @@ static void showUsage(void) {
  * @param argv array of arguments
  * @return false to indicate program needs to abort
  */
-bool parseArguments(const int argc, const char *argv[]) {
+bool parseArguments(int argc, char *argv[]) {
   char buffer[64];
     int i, buflen;
     int retval = true;

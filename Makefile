@@ -13,7 +13,7 @@ CFLAGS += -O3 -g3 -I./
 
 # directory for local libs
 LDFLAGS = -L$(DESTDIR)$(PREFIX)/lib
-LIBS += -lstdc++ -lm -lmosquitto -lconfig
+LIBS += -lstdc++ -lm -lmosquitto -lconfig++
 
 VPATH =
 
