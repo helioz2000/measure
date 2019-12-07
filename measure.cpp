@@ -21,6 +21,7 @@
 #include <unistd.h>
 #include <syslog.h>
 
+#include <libconfig.h++>
 #include <mosquitto.h>
 
 #include "mqtt.h"
@@ -56,6 +57,7 @@ void mqtt_topic_update(const char *topic, const char *value);
 Hardware hw(false);
 TagStore ts;
 MQTT mqtt;
+Config cfg;
 //Mcp9808 envTempSensor;    // Environment temperature sensor at rear of screen
 
 /*
@@ -82,6 +84,65 @@ void sigHandler(int signum)
     printf("Received %s\n", signame);
     syslog(LOG_INFO, "Received %s", signame);
     exitSignal = true;
+}
+
+/** Read configuration file.
+ * @param
+ * @return true if success
+ */
+bool readConfig (void)
+{   int ival;
+    // Read the file. If there is an error, report it and exit.
+    
+    try
+    {
+        cfg.readFile(cfgFileName.c_str());
+    }
+    catch(const FileIOException &fioex)
+    {
+        std::cerr << "I/O error while reading file <" << cfgFileName << ">." << std::endl;
+        return false;
+    }
+    catch(const ParseException &pex)
+    {
+        std::cerr << "Parse error at " << pex.getFile() << ":" << pex.getLine()
+                  << " - " << pex.getError() << std::endl;
+        return false;
+    }
+    
+    //syslog (LOG_INFO, "CFG file read OK");
+    //std::cerr << cfgFileName << " read OK" <<endl;
+    
+    if (! cfg.lookupValue("mainloopdelay", ival)) {
+        setMainLoopDelay( MAIN_LOOP_DELAY_DEFAULT );
+    } else {
+        setMainLoopDelay( ival );
+    }
+/*
+    try {
+        useGPS = cfg.lookup("useGPS");
+    } catch (const SettingNotFoundException &excp) {
+        useGPS = false;
+    } catch (const SettingTypeException &excp) {
+        std::cerr << "Error in config file <" << excp.getPath() << "> is not a bool" << std::endl;
+        return false;
+    }
+    
+    if (useGPS) {
+        try {
+            gpsPort = string((const char*)cfg.lookup("gpsPort"));
+        } catch (const SettingNotFoundException &excp) {
+            useGPS = false;
+        } catch (const SettingTypeException &excp) {
+            std::cerr << "Error in config file <" << excp.getPath() << "> is not a bool" << std::endl;
+            return false;
+        }
+    }
+    if (runAsDaemon && useGPS) {
+        syslog(LOG_INFO, "Using GPS on port %s", gpsPort.c_str());
+    }
+*/
+    return true;
 }
 
 /**
