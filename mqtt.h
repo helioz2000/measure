@@ -126,10 +126,16 @@ public:
     int unsubscribe(const char *topic);
 
     /**
-     * get MQTT server
-     * @return: mqtt server
+     * get MQTT broker
+     * @return: 0 on success, negative number for error
      */
-    const char* server(void);
+    int setBroker(const char *broker);
+
+    /**
+     * get MQTT broker
+     * @return: mqtt broker
+     */
+    const char* broker(void);
 
     /**
      * get MQTT server port
@@ -153,7 +159,7 @@ private:
     struct mosquitto *_mosq;
     bool _connected;
     char _pub_buf[100];
-    std::string _mqttServer;
+    std::string _mqttBroker;
     unsigned int _mqttPort;
     int _mqttKeepalive;
 

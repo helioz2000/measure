@@ -29,7 +29,7 @@
  *********************/
 
 #define DEFAULT_CLIENT_ID "mqtt_client"        // our ID for broker connection
-#define MQTT_BROKER_DEFAULT "127.0.0.1"
+#define MQTT_BROKER_DEFAULT "127.0.0.2"
 #define MQTT_BROKER_DEFAULT_PORT 1883
 #define MQTT_BROKER_DEFAULT_KEEPALIVE 60
 #define MQTT_RETAIN_DEFAULT false
@@ -103,7 +103,7 @@ static void on_subscribe(struct mosquitto *mosq, void *obj, int mid, int qos_cou
      _retain = MQTT_RETAIN_DEFAULT;
      connectionStatusCallback = NULL;
      topicUpdateCallback = NULL;
-     _mqttServer = MQTT_BROKER_DEFAULT;
+     _mqttBroker = MQTT_BROKER_DEFAULT;
      _mqttPort = MQTT_BROKER_DEFAULT_PORT;
      _mqttKeepalive = MQTT_BROKER_DEFAULT_KEEPALIVE;
 
@@ -156,7 +156,7 @@ void MQTT::setConsoleLog(bool enable) {
 void MQTT::connect(void) {
     char strbuf[255];
     // connect to mqtt server
-    int result = mosquitto_connect_async(_mosq, _mqttServer.c_str(), _mqttPort, _mqttKeepalive);
+    int result = mosquitto_connect_async(_mosq, _mqttBroker.c_str(), _mqttPort, _mqttKeepalive);
     if (result != MOSQ_ERR_SUCCESS) {
         sprintf(strbuf, "%s - mosquitto_connect failed: %s [%d]\n", __func__, strerror(result), result);
         syslog(LOG_ERR, "mosquitto_connect failed: %s [%d]", strerror(result), result);
@@ -215,8 +215,13 @@ int MQTT::unsubscribe(const char *topic) {
     return messageid;
 }
 
-const char* MQTT::server(void) {
-    return _mqttServer.c_str();
+int setBroker(const char *broker) {
+    this->_mqttBroker = broker;
+    return 0;
+}
+
+const char* MQTT::broker(void) {
+    return _mqttBroker.c_str();
 }
 
 unsigned int MQTT::port(void) {

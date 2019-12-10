@@ -44,7 +44,7 @@ using namespace libconfig;
 #define MAIN_LOOP_INTERVAL_MAXIMUM 2000   // milli seconds
 
 #define MQTT_CONNECT_TIMEOUT 5      // seconds
-
+#define MQTT_BROKER_DEFAULT "127.0.0.1"
 #define CPU_TEMP_TOPIC "ham/vk2ray/site/raylog/cpu/temp"
 //#define ENV_TEMP_TOPIC "binder/home/screen1/env/temp"
 
@@ -63,11 +63,14 @@ char *info_label_text;
 useconds_t mainloopinterval = 250;   // milli seconds
 //extern void cpuTempUpdate(int x, Tag* t);
 //extern void roomTempUpdate(int x, Tag* t);
+std::string mqttBroker = MQTT_BROKER_DEFAULT;
+
 
 // Proto types
 void subscribe_tags(void);
 void mqtt_connection_status(bool status);
 void mqtt_topic_update(const char *topic, const char *value);
+
 
 Hardware hw(false); // no screen
 TagStore ts;
@@ -150,12 +153,32 @@ bool readConfig (void)
     //syslog (LOG_INFO, "CFG file read OK");
     //std::cerr << cfgFileName << " read OK" <<endl;
 
+    try {
+        setMainLoopInterval(cfg.lookup("mainloopinterval"));
+    } catch (const SettingNotFoundException &excp) {
+        ;
+    } catch (const SettingTypeException &excp) {
+        std::cerr << "Error in config file <" << excp.getPath() << "> is not an integer" << std::endl;
+        return false;
+    }
+    /*
     if (cfg.lookupValue("mainloopinterval", ival)) {
         if (runningAsDaemon) {
             printf( "%s - mainloopinterval found: %d\n",__func__,ival);
         }
         setMainLoopInterval( ival );
     }
+    */
+
+    try {
+        mqtt.setBroker(cfg.lookup("mqtt.broker"));
+    } catch (const SettingNotFoundException &excp) {
+        ;
+    } catch (const SettingTypeException &excp) {
+        std::cerr << "Error in config file <" << excp.getPath() << "> is not a string" << std::endl;
+        return false;
+    }
+
 /*
     try {
         useGPS = cfg.lookup("useGPS");
@@ -273,7 +296,8 @@ void init_tags(void)
 }
 
 void mqtt_connect(void) {
-    printf("%s - attempting to connect to mqtt broker.\n", __func__);
+    mqtt.setBroker(mqttBroker);
+    printf("%s - attempting to connect to mqtt broker %s.\n", __func__, mqtt.broker());
     mqtt.connect();
     mqtt_connection_timeout = time(NULL) + MQTT_CONNECT_TIMEOUT;
     mqtt_connection_in_progress = true;
@@ -284,7 +308,7 @@ void mqtt_connect(void) {
 /**
  * Initialise the MQTT broker and register callbacks
  */
-void init_mqtt(void) {
+void mqtt_init(void) {
     if (debugEnabled) {
         mqtt.setConsoleLog(true);
     }
@@ -484,7 +508,7 @@ int main (int argc, char *argv[])
     }
 
     init_tags();
-    init_mqtt();
+    mqtt_init();
     init_values();
     usleep(100000);
     main_loop();
