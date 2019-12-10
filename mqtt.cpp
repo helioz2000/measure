@@ -103,7 +103,7 @@ static void on_subscribe(struct mosquitto *mosq, void *obj, int mid, int qos_cou
      _retain = MQTT_RETAIN_DEFAULT;
      connectionStatusCallback = NULL;
      topicUpdateCallback = NULL;
-     _mqttBroker = MQTT_BROKER_DEFAULT;
+     _mqttBroker.assign( MQTT_BROKER_DEFAULT );
      _mqttPort = MQTT_BROKER_DEFAULT_PORT;
      _mqttKeepalive = MQTT_BROKER_DEFAULT_KEEPALIVE;
 
@@ -215,8 +215,8 @@ int MQTT::unsubscribe(const char *topic) {
     return messageid;
 }
 
-int setBroker(const char *broker) {
-    this->_mqttBroker = broker;
+int MQTT::setBroker(const char *newBroker) {
+    _mqttBroker = newBroker;
     return 0;
 }
 

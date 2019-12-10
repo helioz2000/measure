@@ -131,7 +131,7 @@ void setMainLoopInterval(int newValue)
  */
 bool readConfig (void)
 {
-    int ival;
+    //int ival;
     // Read the file. If there is an error, report it and exit.
 
     try
@@ -296,7 +296,6 @@ void init_tags(void)
 }
 
 void mqtt_connect(void) {
-    mqtt.setBroker(mqttBroker);
     printf("%s - attempting to connect to mqtt broker %s.\n", __func__, mqtt.broker());
     mqtt.connect();
     mqtt_connection_timeout = time(NULL) + MQTT_CONNECT_TIMEOUT;
@@ -343,9 +342,11 @@ void mqtt_connection_status(bool status) {
     //printf("%s - %d\n", __func__, status);
     // subscribe tags when connection is online
     if (status) {
-        syslog(LOG_INFO, "Connected to MQTT broker [%s]", mqtt.server());
-        printf("%s: Connected to mqtt broker [%s]\n", __func__, mqtt.server());
-        mqtt_connection_in_progress = false;
+        syslog(LOG_INFO, "Connected to MQTT broker [%s]", mqtt.broker());
+	if (!runningAsDaemon) {
+	    printf("%s: Connected to mqtt broker [%s]\n", __func__, mqtt.broker());
+        }
+	mqtt_connection_in_progress = false;
         subscribe_tags();
     } else {
         if (mqtt_connection_in_progress) {
@@ -356,8 +357,8 @@ void mqtt_connection_status(bool status) {
             fprintf(stderr, "%s: mqtt connection timeout after %lds\n", __func__, timeout);
             mqtt_connection_in_progress = false;
         } else {
-            syslog(LOG_WARNING, "Disconnected from MQTT broker [%s]", mqtt.server());
-            fprintf(stderr, "%s: Disconnected from MQTT broker [%s]\n", __func__, mqtt.server());
+            syslog(LOG_WARNING, "Disconnected from MQTT broker [%s]", mqtt.broker());
+            fprintf(stderr, "%s: Disconnected from MQTT broker [%s]\n", __func__, mqtt.broker());
         }
     }
     //printf("%s - done\n", __func__);

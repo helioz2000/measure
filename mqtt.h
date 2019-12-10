@@ -129,7 +129,7 @@ public:
      * get MQTT broker
      * @return: 0 on success, negative number for error
      */
-    int setBroker(const char *broker);
+    int setBroker(const char *newBroker);
 
     /**
      * get MQTT broker
