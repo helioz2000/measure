@@ -38,13 +38,15 @@ using namespace libconfig;
 #define CFG_FILENAME_EXT ".cfg"
 #define CFG_DEFAULT_FILEPATH "/etc/"
 
-#define VAR_PROCESS_INTERVAL 5      // seconds
-#define PROCESS_LOOP_INTERVAL 100	// milli seconds
+//#define VAR_PROCESS_INTERVAL 5      // seconds
+//#define PROCESS_LOOP_INTERVAL 100	// milli seconds
+#define MAIN_LOOP_INTERVAL_MINIMUM 50     // milli seconds
+#define MAIN_LOOP_INTERVAL_MAXIMUM 2000   // milli seconds
+
 #define MQTT_CONNECT_TIMEOUT 5      // seconds
 
 #define CPU_TEMP_TOPIC "ham/vk2ray/site/raylog/cpu/temp"
 //#define ENV_TEMP_TOPIC "binder/home/screen1/env/temp"
-
 
 const char *build_date_str = __DATE__ " " __TIME__;
 static string cfgFileName;
@@ -58,6 +60,7 @@ time_t mqtt_connect_time = 0;   // time the connection was initiated
 bool mqtt_connection_in_progress = false;
 std::string processName;
 char *info_label_text;
+int mainloopinterval = 250;   // milli seconds
 //extern void cpuTempUpdate(int x, Tag* t);
 //extern void roomTempUpdate(int x, Tag* t);
 
@@ -72,8 +75,7 @@ MQTT mqtt;
 Config cfg;         // config file name
 //Mcp9808 envTempSensor;    // Environment temperature sensor at rear of screen
 
-/*
- * Handle system signals
+/** Handle OS signals
  */
 void sigHandler(int signum)
 {
@@ -98,12 +100,34 @@ void sigHandler(int signum)
     exitSignal = true;
 }
 
+/** set main loop interval to a valid seeting
+ * @param newValue the new main loop daly in ms
+ */
+void setMainLoopInterval(int newValue)
+{
+    int val = newValue;
+    if (newValue < MAIN_LOOP_INTERVAL_MINIMUM) {
+        val = MAIN_LOOP_INTERVAL_MINIMUM;
+    }
+    if (newValue > MAIN_LOOP_INTERVAL_MAXIMUM) {
+        val = MAIN_LOOP_INTERVAL_MAXIMUM;
+    }
+    mainLoopInterval = val;
+
+    if (runningAsDaemon) {
+        syslog(LOG_INFO, "Main Loop interval is %dms", mainLoopInterval);
+    } else {
+        fprintf("Main Loop interval is %dms", mainLoopInterval);
+    }
+}
+
+
 /** Read configuration file.
  * @param
  * @return true if success
  */
 bool readConfig (void)
-{   
+{
     int ival;
     // Read the file. If there is an error, report it and exit.
 
@@ -126,12 +150,11 @@ bool readConfig (void)
     //syslog (LOG_INFO, "CFG file read OK");
     //std::cerr << cfgFileName << " read OK" <<endl;
 
-    if (! cfg.lookupValue("mainloopdelay", ival)) {
-        printf( "%s - mainloopdelay NOT found\n",__func__);
-	//setMainLoopDelay( MAIN_LOOP_DELAY_DEFAULT );
-    } else {
-        printf( "%s - mainloopdelay found: %d\n",__func__,ival);
-        //setMainLoopDelay( ival );
+    if (cfg.lookupValue("mainloopinterval", ival)) {
+        if (runningAsDaemon) {
+            printf( "%s - mainloopinterval found: %d\n",__func__,ival);
+        }
+        setMainLoopInterval( ival );
     }
 /*
     try {
@@ -161,12 +184,12 @@ bool readConfig (void)
 }
 
 /**
- * Process local variables
+ * Process variables
  * Local variables are processed at a fixed time interval
  * The processing involves reading value from hardware and
  * publishing the value to MQTT broker
  */
-void var_process(void) {
+void process(void) {
     float fValue;
     time_t now = time(NULL);
     if (now > var_process_time) {
@@ -215,8 +238,7 @@ void init_values(void)
     //printf(info_label_text);
 }
 
-/*
- * Initialise the tag database (tagstore)
+/** Initialise the tag database (tagstore)
  *
  */
 void init_tags(void)
@@ -330,34 +352,48 @@ void mqtt_topic_update(const char *topic, const char *value) {
     tp->setValue(value);
 }
 
-/**
- * called on program exit
+/** called on program exit
  */
 void exit_loop(void)
 {
 }
 
+/** Main program loop
+ */
 void main_loop()
 {
     clock_t start, end;
-    double cpu_time_used;
-    double min_time = 99999.0, max_time = 0.0;
+    useconds_t sleep_usec;
+    double delta_time;
+    useconds_t processing_time;
+    useconds_t min_time = 99999999, max_time = 0;
 
     // first call takes a long time (10ms)
     while (!exitSignal) {
+        // run processing and record start/stop time
         start = clock();
-        var_process();
+        process();
         end = clock();
-        cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
-        if (cpu_time_used > max_time) {
-            max_time = cpu_time_used;
+        // calculate cpu time used in milli seconds
+        delta_time = (((double) (end - start)) / CLOCKS_PER_SEC) * 1000.0;
+        processing_time = (useconds_t) delta_time;
+        // store min/max cpu time
+        if (processing_time > max_time) {
+            max_time = processing_time;
         }
-        if (cpu_time_used < min_time) {
-            min_time = cpu_time_used;
+        if (processing_time < min_time) {
+            min_time = processing_time;
         }
-        usleep(PROCESS_LOOP_INTERVAL * 1000);
+        // enter loop delay if needed
+        // if cpu_time_used exceeds the mainLoopInterval
+        // then bypass the loop delay
+        if (mainloopinterval > processing_time) {
+            sleep_usec = mainloopinterval - processing_time;  // sleep time in usec
+            usleep(sleep_usec);
+        }
     }
-    printf("CPU time %.3fms - %.3fms\n", min_time*1000, max_time*1000);
+    if (!runningAsDaemon)
+        printf("CPU time for var_process: %dms - %dms\n", min_time, max_time);
 }
 
 /** Display program usage instructions.
