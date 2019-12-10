@@ -63,8 +63,6 @@ char *info_label_text;
 useconds_t mainloopinterval = 250;   // milli seconds
 //extern void cpuTempUpdate(int x, Tag* t);
 //extern void roomTempUpdate(int x, Tag* t);
-std::string mqttBroker = MQTT_BROKER_DEFAULT;
-
 
 // Proto types
 void subscribe_tags(void);
@@ -103,8 +101,8 @@ void sigHandler(int signum)
     exitSignal = true;
 }
 
-/** set main loop interval to a valid seeting
- * @param newValue the new main loop daly in ms
+/** set main loop interval to a valid setting
+ * @param newValue the new main loop interval in ms
  */
 void setMainLoopInterval(int newValue)
 {
@@ -173,7 +171,7 @@ bool readConfig (void)
     try {
         mqtt.setBroker(cfg.lookup("mqtt.broker"));
     } catch (const SettingNotFoundException &excp) {
-        ;
+        mqtt.setBroker(MQTT_BROKER_DEFAULT);
     } catch (const SettingTypeException &excp) {
         std::cerr << "Error in config file <" << excp.getPath() << "> is not a string" << std::endl;
         return false;
