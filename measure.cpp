@@ -38,7 +38,7 @@ using namespace libconfig;
 #define CFG_FILENAME_EXT ".cfg"
 #define CFG_DEFAULT_FILEPATH "/etc/"
 
-//#define VAR_PROCESS_INTERVAL 5      // seconds
+#define VAR_PROCESS_INTERVAL 5      // seconds
 //#define PROCESS_LOOP_INTERVAL 100	// milli seconds
 #define MAIN_LOOP_INTERVAL_MINIMUM 50     // milli seconds
 #define MAIN_LOOP_INTERVAL_MAXIMUM 2000   // milli seconds
@@ -60,7 +60,7 @@ time_t mqtt_connect_time = 0;   // time the connection was initiated
 bool mqtt_connection_in_progress = false;
 std::string processName;
 char *info_label_text;
-int mainloopinterval = 250;   // milli seconds
+useconds_t mainloopinterval = 250;   // milli seconds
 //extern void cpuTempUpdate(int x, Tag* t);
 //extern void roomTempUpdate(int x, Tag* t);
 
@@ -112,12 +112,12 @@ void setMainLoopInterval(int newValue)
     if (newValue > MAIN_LOOP_INTERVAL_MAXIMUM) {
         val = MAIN_LOOP_INTERVAL_MAXIMUM;
     }
-    mainLoopInterval = val;
+    mainloopinterval = val;
 
     if (runningAsDaemon) {
-        syslog(LOG_INFO, "Main Loop interval is %dms", mainLoopInterval);
+        syslog(LOG_INFO, "Main Loop interval is %dms", mainloopinterval);
     } else {
-        fprintf("Main Loop interval is %dms", mainLoopInterval);
+        fprintf(stderr, "Main Loop interval is %dms\n", mainloopinterval);
     }
 }
 
@@ -189,8 +189,8 @@ bool readConfig (void)
  * The processing involves reading value from hardware and
  * publishing the value to MQTT broker
  */
-void process(void) {
-    float fValue;
+void var_process(void) {
+    //float fValue;
     time_t now = time(NULL);
     if (now > var_process_time) {
         var_process_time = now + VAR_PROCESS_INTERVAL;
@@ -222,6 +222,10 @@ void process(void) {
     /*if (!mqtt.isConnected() && !mqtt_connection_in_progress) {
         mqtt_connect();
     }*/
+}
+
+void process() {
+    var_process();
 }
 
 void init_values(void)
@@ -456,8 +460,6 @@ bool parseArguments(int argc, char *argv[]) {
 
 int main (int argc, char *argv[])
 {
-    int i;
-
     if ( getppid() == 1) runningAsDaemon = true;
     processName =  argv[0];
 
