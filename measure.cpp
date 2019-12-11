@@ -159,14 +159,6 @@ bool readConfig (void)
         std::cerr << "Error in config file <" << excp.getPath() << "> is not an integer" << std::endl;
         return false;
     }
-    /*
-    if (cfg.lookupValue("mainloopinterval", ival)) {
-        if (runningAsDaemon) {
-            printf( "%s - mainloopinterval found: %d\n",__func__,ival);
-        }
-        setMainLoopInterval( ival );
-    }
-    */
 
     try {
         mqtt.setBroker(cfg.lookup("mqtt.broker"));
@@ -213,31 +205,24 @@ bool readConfig (void)
 void var_process(void) {
     //float fValue;
     time_t now = time(NULL);
-    if (now > var_process_time) {
-        var_process_time = now + VAR_PROCESS_INTERVAL;
+//    if (now > var_process_time) {
+//        var_process_time = now + VAR_PROCESS_INTERVAL;
 
-        // update CPU temperature
-        Tag *tag = ts.getTag((char*) CPU_TEMP_TOPIC);
-        if (tag != NULL) {
+    // update CPU temperature
+    Tag *tag = ts.getTag((char*) CPU_TEMP_TOPIC);
+    if (tag != NULL) {
+        // read time due ?
+        if (tp->nextReadTime <= now) {
             tag->setValue(hw.read_cpu_temp());
+            tp->nextReadTime = now + tp->readInterval;
+        }
+        // publish time due ?
+        if (tp->nextPublishTime <= now) {
             if (mqtt.isConnected()) {
               mqtt.publish(CPU_TEMP_TOPIC, "%.1f", tag->floatValue() );
             }
+            tp->nextPublishTime = now + tp->publishInterval;
         }
-        /*
-        // update environment temperature
-        tag = ts.getTag((const char*) ENV_TEMP_TOPIC);
-        if (tag != NULL) {
-            if (envTempSensor.readTempC(&fValue)) {
-                tag->setValue(fValue);
-                if (mqtt.isConnected()) {
-                    mqtt.publish(ENV_TEMP_TOPIC, "%.1f", tag->floatValue() );
-                }
-            } else {
-                syslog(LOG_ERR, "Failed to read Mcp9808 temp sensor");
-            }
-        }
-        */
     }
     // reconnect mqtt if required
     /*if (!mqtt.isConnected() && !mqtt_connection_in_progress) {
@@ -271,6 +256,11 @@ void init_tags(void)
     // CPU temp
     Tag* tp = ts.addTag((char*) CPU_TEMP_TOPIC);
     tp->setPublish();
+    tp->readInterval = 5;
+    tp->publishInterval = 5;
+    time_t now = time(NULL)
+    tp->nextReadTime = now + tp->readInterval;
+    tp->nextPublishTime = now + tp->publishInterval;
     //tp->registerCallback(&cpuTempUpdate, 15);   // update screen
 
 /*

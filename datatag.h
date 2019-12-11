@@ -146,8 +146,10 @@ private:
     uint16_t topicCRC;                  // CRC on topic path
     double topicDoubleValue;            // storage numeric value
     time_t lastUpdateTime;              // last update time (change of value)
-    time_t next_read_time;              // next scheduled read
-    time_t next_publish_time;           // next publish time
+    double readInterval;                // seconds between reads
+    time_t nextReadTime;                // next scheduled read
+    double publishInterval;             // seconds between publish
+    time_t nextPublishTime;             // next publish time
     void (*valueUpdate) (int,Tag*);     // callback for value update
     int _valueUpdateID;                 // ID for value update
     bool publish;                       // true = we publish, false = we subscribe
