@@ -212,16 +212,16 @@ void var_process(void) {
     Tag *tag = ts.getTag((char*) CPU_TEMP_TOPIC);
     if (tag != NULL) {
         // read time due ?
-        if (tp->nextReadTime <= now) {
+        if (tag->nextReadTime <= now) {
             tag->setValue(hw.read_cpu_temp());
-            tp->nextReadTime = now + tp->readInterval;
+            tag->nextReadTime = now + tag->readInterval;
         }
         // publish time due ?
-        if (tp->nextPublishTime <= now) {
+        if (tag->nextPublishTime <= now) {
             if (mqtt.isConnected()) {
               mqtt.publish(CPU_TEMP_TOPIC, "%.1f", tag->floatValue() );
             }
-            tp->nextPublishTime = now + tp->publishInterval;
+            tag->nextPublishTime = now + tag->publishInterval;
         }
     }
     // reconnect mqtt if required
