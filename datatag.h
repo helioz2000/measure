@@ -139,6 +139,7 @@ public:
      */
     void setSubscribe(void);
 
+    // public members used to store data which is not used inside this class
     double readInterval;                // seconds between reads
     time_t nextReadTime;                // next scheduled read
     double publishInterval;             // seconds between publish
@@ -150,7 +151,7 @@ private:
     std::string topic;                  // storage for topic path
     uint16_t topicCRC;                  // CRC on topic path
     double topicDoubleValue;            // storage numeric value
-    time_t lastUpdateTime;              // last update time (change of value)    
+    time_t lastUpdateTime;              // last update time (change of value)
     void (*valueUpdate) (int,Tag*);     // callback for value update
     int _valueUpdateID;                 // ID for value update
     bool publish;                       // true = we publish, false = we subscribe

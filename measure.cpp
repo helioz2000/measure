@@ -234,8 +234,8 @@ bool var_process(void) {
     return retval;
 }
 
-/** 
- * return true if at least one variable was processed
+/** Process all  variables
+ * @return true if at least one variable was processed
  */
 bool process() {
     return var_process();
@@ -252,6 +252,9 @@ void init_values(void)
     hw.get_ip_address(info4, sizeof(info4));
     info_label_text = (char *)malloc(strlen(info1) +strlen(info2) +strlen(info3) +strlen(info4) +5);
     sprintf(info_label_text, "%s\n%s\n%s\n%s", info1, info2, info3, info4);
+    if (!runningAsDaemon) {
+	    printf(info_label_text);
+        }
     //printf(info_label_text);
 }
 
@@ -260,6 +263,41 @@ void init_values(void)
  */
 void init_tags(void)
 {
+    Tag* tp = null;
+
+    // CPU temperature
+    try {
+        tp = ts.addTag(cfg.lookup("cputemp.topic"));
+    } catch (const SettingNotFoundException &excp) {
+        ;
+    } catch (const SettingTypeException &excp) {
+        std::cerr << "Error in config file <" << excp.getPath() << "> is not a string" << std::endl;
+        return false;
+    }
+
+    if (tp) {
+        try {
+            tp->readInterval = cfg.lookup("cputemp.readinterval"));
+        } catch (const SettingNotFoundException &excp) {
+            ;
+        } catch (const SettingTypeException &excp) {
+            std::cerr << "Error in config file <" << excp.getPath() << "> is not an integer" << std::endl;
+            return false;
+        }
+        try {
+            tp->publishInterval = cfg.lookup("cputemp.publishinterval"));
+        } catch (const SettingNotFoundException &excp) {
+            ;
+        } catch (const SettingTypeException &excp) {
+            std::cerr << "Error in config file <" << excp.getPath() << "> is not an integer" << std::endl;
+            return false;
+        }
+        time_t now = time(NULL);
+        tp->nextReadTime = now + tp->readInterval;
+        tp->nextPublishTime = now + tp->publishInterval;
+    }
+
+/*
     // CPU temp
     Tag* tp = ts.addTag((char*) CPU_TEMP_TOPIC);
     tp->setPublish();
@@ -269,7 +307,7 @@ void init_tags(void)
     tp->nextReadTime = now + tp->readInterval;
     tp->nextPublishTime = now + tp->publishInterval;
     //tp->registerCallback(&cpuTempUpdate, 15);   // update screen
-
+*/
 /*
     // Environment temperature is stored in index 0
     tp = ts.addTag((char*) ENV_TEMP_TOPIC);
@@ -405,15 +443,15 @@ void main_loop()
         delta_time = (((double) (end - start)) / CLOCKS_PER_SEC) * 1000.0;
         processing_time = (useconds_t) (delta_time * 1000);
 
-	// store min/max times if any processing was done
-	if (processing_success) {
+	    // store min/max times if any processing was done
+	    if (processing_success) {
             if (processing_time > max_time) {
                 max_time = processing_time;
             }
             if (processing_time < min_time) {
                 min_time = processing_time;
             }
-	}
+	    }
         // enter loop delay if needed
         // if cpu_time_used exceeds the mainLoopInterval
         // then bypass the loop delay

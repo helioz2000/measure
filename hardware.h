@@ -23,12 +23,6 @@ public:
     ~Hardware ();
 
     /**
-     * Process the screen saver
-     * @param brightness: The current brightness setting when there screen saver is not active
-     */
-    void process_screen_saver(int brightness);
-
-    /**
      * Shutdown and Reboot the system
      * @param reboot: false=halt true=reboot
      */
@@ -38,17 +32,6 @@ public:
      * Read the CPU temperature in DegC
      */
     float read_cpu_temp(void);
-
-    /**
-     * Set the display brightness
-     * @param new_brightness: new brightness setting
-     */
-    bool set_brightness(int new_brightness);
-
-    /**
-     * Read the display brightness
-     */
-    int get_brightness(void);
 
     /**
      * Read operating system name
@@ -77,6 +60,26 @@ public:
      * @param maxlen: length of text storage buffer
      */
     int get_ip_address(char *buffer, int maxlen);
+
+// ----- Display related methods
+
+    /**
+     * Process the screen saver
+     * @param brightness: The current brightness setting when there screen saver is not active
+     */
+    void process_screen_saver(int brightness);
+
+    /**
+     * Set the display brightness
+     * @param new_brightness: new brightness setting
+     */
+    bool set_brightness(int new_brightness);
+
+    /**
+     * Read the display brightness
+     */
+    int get_brightness(void);
+
 
 private:
     bool _has_screen;            // true if screen is in use

@@ -69,29 +69,6 @@ Hardware::~Hardware() {
   //fprintf(stderr, "%s: Destructor called\n", __func__);
 }
 
-void Hardware::process_screen_saver(int brightness)
-{
-    char buffer[256];
-    if (!_has_screen) return;
-    if (touch_fd <= 0) return;
-    int length = read(touch_fd, buffer, sizeof(buffer));
-    time_t now = time(NULL);
-    if (length > 0) {   // Touch detected
-        screen_timout = now + SCREEN_SAVER_TIME;
-        if (screen_saver_active) {      // disable screen saver
-            set_brightness(brightness);
-            screen_saver_active = false;
-        }
-    } else {    // No Touch
-        if (!screen_saver_active) {
-            if (now > screen_timout) {
-                set_brightness(0);
-                screen_saver_active = true;
-            }
-        }
-    }
-}
-
 int Hardware::shutdown(bool reboot)
 {
     char cmdbuf[50];
@@ -101,6 +78,25 @@ int Hardware::shutdown(bool reboot)
         sprintf(cmdbuf, "shutdown -h now");
     }
     int retval = system(cmdbuf);
+    return retval;
+}
+
+/**
+ * Read CPU temperature
+ */
+float Hardware::read_cpu_temp(void)
+{
+    char buffer[80];
+    float retval = 0.0;
+    int fd = open(CPU_TEMP, O_RDONLY | O_NONBLOCK);
+    if (fd != -1) {
+        int length = read(fd, buffer, sizeof(buffer));
+        buffer[length] = 0;
+        sscanf(buffer, "%f", &retval);
+        retval = retval / 1000.0;
+        close(fd);
+    }
+
     return retval;
 }
 
@@ -180,6 +176,29 @@ int Hardware::get_kernel_name(char *buffer, int maxlen)
     return strlen(buffer);
 }
 
+void Hardware::process_screen_saver(int brightness)
+{
+    char buffer[256];
+    if (!_has_screen) return;
+    if (touch_fd <= 0) return;
+    int length = read(touch_fd, buffer, sizeof(buffer));
+    time_t now = time(NULL);
+    if (length > 0) {   // Touch detected
+        screen_timout = now + SCREEN_SAVER_TIME;
+        if (screen_saver_active) {      // disable screen saver
+            set_brightness(brightness);
+            screen_saver_active = false;
+        }
+    } else {    // No Touch
+        if (!screen_saver_active) {
+            if (now > screen_timout) {
+                set_brightness(0);
+                screen_saver_active = true;
+            }
+        }
+    }
+}
+
 /**
  * Set screen brightness
  */
@@ -221,23 +240,4 @@ int Hardware::get_brightness(void)
         close(fd);
     }
     return value;
-}
-
-/**
- * Read CPU temperature
- */
-float Hardware::read_cpu_temp(void)
-{
-    char buffer[80];
-    float retval = 0.0;
-    int fd = open(CPU_TEMP, O_RDONLY | O_NONBLOCK);
-    if (fd != -1) {
-        int length = read(fd, buffer, sizeof(buffer));
-        buffer[length] = 0;
-        sscanf(buffer, "%f", &retval);
-        retval = retval / 1000.0;
-        close(fd);
-    }
-
-    return retval;
 }
