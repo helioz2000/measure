@@ -140,9 +140,9 @@ public:
     void setSubscribe(void);
 
     // public members used to store data which is not used inside this class
-    double readInterval;                // seconds between reads
+    int readInterval;                   // seconds between reads
     time_t nextReadTime;                // next scheduled read
-    double publishInterval;             // seconds between publish
+    int publishInterval;                // seconds between publish
     time_t nextPublishTime;             // next publish time
 
 private:

@@ -241,7 +241,7 @@ bool process() {
     return var_process();
 }
 
-void init_values(void)
+bool init_values(void)
 {
     char info1[80], info2[80], info3[80], info4[80];
 
@@ -256,14 +256,33 @@ void init_values(void)
 	    printf(info_label_text);
         }
     //printf(info_label_text);
+    return true;
+}
+ 
+bool cfg_get_int(const char *path, int &value) {
+    if (!cfg.lookupValue(path, value)) {
+	std::cerr << "Error in config file <" << path << ">" << std::endl;
+	return false;
+    }
+    return true;
+}
+
+
+bool cfg_get_str(const char *path, const char*&value) {
+if (!cfg.lookupValue(path, value)) {
+         std::cerr << "Error in config file <" << path << ">" << std::endl;
+         return false;
+     }
+     return true;
 }
 
 /** Initialise the tag database (tagstore)
- *
+ * @return false on failure
  */
-void init_tags(void)
+bool init_tags(void)
 {
-    Tag* tp = null;
+    Tag* tp = NULL;
+    std::string path;
 
     // CPU temperature
     try {
@@ -276,56 +295,19 @@ void init_tags(void)
     }
 
     if (tp) {
-        try {
-            tp->readInterval = cfg.lookup("cputemp.readinterval"));
-        } catch (const SettingNotFoundException &excp) {
-            ;
-        } catch (const SettingTypeException &excp) {
-            std::cerr << "Error in config file <" << excp.getPath() << "> is not an integer" << std::endl;
-            return false;
-        }
-        try {
-            tp->publishInterval = cfg.lookup("cputemp.publishinterval"));
-        } catch (const SettingNotFoundException &excp) {
-            ;
-        } catch (const SettingTypeException &excp) {
-            std::cerr << "Error in config file <" << excp.getPath() << "> is not an integer" << std::endl;
-            return false;
-        }
+	tp->publishInterval = 0;
+	if (!cfg_get_int("cputemp.readinterval", tp->readInterval)) return false;
+	if (!cfg_get_int("cputemp.publishinterval", tp->publishInterval)) return false;
         time_t now = time(NULL);
         tp->nextReadTime = now + tp->readInterval;
-        tp->nextPublishTime = now + tp->publishInterval;
+	// enable publish if interval is present
+	if (tp->publishInterval > 0) {
+		tp->setPublish();
+        	tp->nextPublishTime = now + tp->publishInterval;
+	}
     }
 
-/*
-    // CPU temp
-    Tag* tp = ts.addTag((char*) CPU_TEMP_TOPIC);
-    tp->setPublish();
-    tp->readInterval = 5;
-    tp->publishInterval = 5;
-    time_t now = time(NULL);
-    tp->nextReadTime = now + tp->readInterval;
-    tp->nextPublishTime = now + tp->publishInterval;
-    //tp->registerCallback(&cpuTempUpdate, 15);   // update screen
-*/
-/*
-    // Environment temperature is stored in index 0
-    tp = ts.addTag((char*) ENV_TEMP_TOPIC);
-    tp->setPublish();
-    tp->registerCallback(&roomTempUpdate, 0);   // update screen
-
-    // Shack Temp is stored in index 0
-    tp = ts.addTag((char*) "binder/home/shack/room/temp");
-    tp->registerCallback(&roomTempUpdate, 1);
-
-    // Bedroom 1 Temp
-    tp = ts.addTag((const char*) "binder/home/bed1/room/temp");
-    tp->registerCallback(&roomTempUpdate, 2);
-*/
-    // Testing only
-    //ts.addTag((char*) "binder/home/screen1/room/temp");
-    //ts.addTag((char*) "binder/home/screen1/room/hum");
-    // = ts.getTag((char*) "binder/home/screen1/room/temp");
+    return true;
 }
 
 void mqtt_connect(void) {
@@ -340,13 +322,14 @@ void mqtt_connect(void) {
 /**
  * Initialise the MQTT broker and register callbacks
  */
-void mqtt_init(void) {
+bool mqtt_init(void) {
     if (debugEnabled) {
         mqtt.setConsoleLog(true);
     }
     mqtt.registerConnectionCallback(mqtt_connection_status);
     mqtt.registerTopicUpdateCallback(mqtt_topic_update);
     mqtt_connect();
+    return true;
 }
 
 /**
@@ -547,9 +530,9 @@ int main (int argc, char *argv[])
         goto exit_fail;
     }
 
-    init_tags();
-    mqtt_init();
-    init_values();
+    if (!init_tags()) goto exit_fail;
+    if (!mqtt_init()) goto exit_fail;
+    if (!init_values()) goto exit_fail;
     usleep(100000);
     main_loop();
     exit_loop();
