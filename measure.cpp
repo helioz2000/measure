@@ -201,9 +201,10 @@ bool readConfig (void)
  * Local variables are processed at a fixed time interval
  * The processing involves reading value from hardware and
  * publishing the value to MQTT broker
+ * @returns true if one or more variable were processed
  */
-void var_process(void) {
-    //float fValue;
+bool var_process(void) {
+    bool retval = false;
     time_t now = time(NULL);
 //    if (now > var_process_time) {
 //        var_process_time = now + VAR_PROCESS_INTERVAL;
@@ -215,11 +216,13 @@ void var_process(void) {
         if (tag->nextReadTime <= now) {
             tag->setValue(hw.read_cpu_temp());
             tag->nextReadTime = now + tag->readInterval;
+	    retval = true;
         }
         // publish time due ?
         if (tag->nextPublishTime <= now) {
             if (mqtt.isConnected()) {
-              mqtt.publish(CPU_TEMP_TOPIC, "%.1f", tag->floatValue() );
+                mqtt.publish(CPU_TEMP_TOPIC, "%.1f", tag->floatValue() );
+		retval = true;
             }
             tag->nextPublishTime = now + tag->publishInterval;
         }
@@ -228,10 +231,14 @@ void var_process(void) {
     /*if (!mqtt.isConnected() && !mqtt_connection_in_progress) {
         mqtt_connect();
     }*/
+    return retval;
 }
 
-void process() {
-    var_process();
+/** 
+ * return true if at least one variable was processed
+ */
+bool process() {
+    return var_process();
 }
 
 void init_values(void)
@@ -258,7 +265,7 @@ void init_tags(void)
     tp->setPublish();
     tp->readInterval = 5;
     tp->publishInterval = 5;
-    time_t now = time(NULL)
+    time_t now = time(NULL);
     tp->nextReadTime = now + tp->readInterval;
     tp->nextPublishTime = now + tp->publishInterval;
     //tp->registerCallback(&cpuTempUpdate, 15);   // update screen
@@ -379,38 +386,44 @@ void exit_loop(void)
  */
 void main_loop()
 {
+    bool processing_success = false;
     clock_t start, end;
     useconds_t sleep_usec;
     double delta_time;
     useconds_t processing_time;
     useconds_t min_time = 99999999, max_time = 0;
+    useconds_t interval = mainloopinterval * 1000;	// convert ms to us
+
 
     // first call takes a long time (10ms)
     while (!exitSignal) {
         // run processing and record start/stop time
         start = clock();
-        process();
+        processing_success = process();
         end = clock();
-        // calculate cpu time used in milli seconds
+        // calculate cpu time used [ms]
         delta_time = (((double) (end - start)) / CLOCKS_PER_SEC) * 1000.0;
-        processing_time = (useconds_t) delta_time;
-        // store min/max cpu time
-        if (processing_time > max_time) {
-            max_time = processing_time;
-        }
-        if (processing_time < min_time) {
-            min_time = processing_time;
-        }
+        processing_time = (useconds_t) (delta_time * 1000);
+
+	// store min/max times if any processing was done
+	if (processing_success) {
+            if (processing_time > max_time) {
+                max_time = processing_time;
+            }
+            if (processing_time < min_time) {
+                min_time = processing_time;
+            }
+	}
         // enter loop delay if needed
         // if cpu_time_used exceeds the mainLoopInterval
         // then bypass the loop delay
         if (mainloopinterval > processing_time) {
-            sleep_usec = mainloopinterval - processing_time;  // sleep time in usec
+            sleep_usec = interval - processing_time;  // sleep time in us
             usleep(sleep_usec);
         }
     }
     if (!runningAsDaemon)
-        printf("CPU time for var_process: %dms - %dms\n", min_time, max_time);
+        printf("CPU time for variable processing: %dus - %dus\n", min_time, max_time);
 }
 
 /** Display program usage instructions.
